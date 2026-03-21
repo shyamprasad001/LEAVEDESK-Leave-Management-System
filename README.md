@@ -1,4 +1,4 @@
-# 🎓 LeaveFlow — Faculty Leave Management System
+# 🎓 LeaveDESK — Faculty Leave Management System
 
 A full-stack web application for managing faculty leave requests.
 
