@@ -37,7 +37,6 @@ block body
                 th Leave Type
                 th From
                 th To
-                th Days
                 th Applied On
                 th Status
                 th HOD Comment
@@ -52,7 +51,6 @@ block body
                     | #{leave.leaveType}
                   td= new Date(leave.startDate).toLocaleDateString('en-IN')
                   td= new Date(leave.endDate).toLocaleDateString('en-IN')
-                  td= leave.totalDays
                   td= new Date(leave.createdAt).toLocaleDateString('en-IN')
                   td
                     span(class="badge badge-" + leave.status.toLowerCase())= leave.status

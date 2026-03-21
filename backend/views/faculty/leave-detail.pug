@@ -9,7 +9,7 @@ block body
         .msg-success= success_msg
       .page-heading Leave Application Details
       p
-        a(href="/faculty/my-leaves") &lt;&lt; Back to My Applications
+        a.btn.btn-primary(href="/faculty/my-leaves") Back to My Applications
       .detail-grid
         .detail-col
           .info-box
@@ -24,9 +24,6 @@ block body
               tr
                 td End Date
                 td= new Date(leave.endDate).toLocaleDateString('en-IN', {weekday:'long', day:'2-digit', month:'long', year:'numeric'})
-              tr
-                td Total Days
-                td #{leave.totalDays} day(s)
               tr
                 td Urgent
                 td= leave.isUrgent ? 'YES' : 'No'

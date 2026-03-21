@@ -11,7 +11,7 @@ block body
         .msg-error= error_msg
       .page-heading Review Leave Request
       p
-        a(href="/hod/leave-requests") &lt;&lt; Back to Leave Requests
+        a.btn.btn-primary(href="/hod/leave-requests") Back to Leave Requests
       .detail-grid
         .detail-col
           .info-box
@@ -24,15 +24,8 @@ block body
                 td Employee ID
                 td= leave.faculty.employeeId
               tr
-                td Designation
-                td= leave.faculty.designation
-              tr
                 td Email
                 td= leave.faculty.email
-              if leave.faculty.phone
-                tr
-                  td Phone
-                  td= leave.faculty.phone
         .detail-col
           .info-box
             h4 Leave Details
@@ -46,9 +39,6 @@ block body
               tr
                 td End Date
                 td= new Date(leave.endDate).toLocaleDateString('en-IN', {weekday:'long', day:'2-digit', month:'long', year:'numeric'})
-              tr
-                td Total Days
-                td #{leave.totalDays} day(s)
               tr
                 td Urgent
                 td= leave.isUrgent ? 'YES - Emergency' : 'No'

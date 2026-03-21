@@ -31,11 +31,9 @@ block body
               tr
                 th #
                 th Faculty Name
-                th Designation
                 th Leave Type
                 th From
                 th To
-                th Days
                 th Applied On
                 th Status
                 th Action
@@ -44,14 +42,12 @@ block body
                 tr(class=leave.isUrgent && leave.status==='Pending' ? 'urgent-row' : '')
                   td= i + 1
                   td= leave.faculty.name
-                  td= leave.faculty.designation
                   td
                     if leave.isUrgent
                       span.badge.badge-urgent URGENT &nbsp;
                     | #{leave.leaveType}
                   td= new Date(leave.startDate).toLocaleDateString('en-IN')
                   td= new Date(leave.endDate).toLocaleDateString('en-IN')
-                  td= leave.totalDays
                   td= new Date(leave.createdAt).toLocaleDateString('en-IN')
                   td
                     span(class="badge badge-" + leave.status.toLowerCase())= leave.status
