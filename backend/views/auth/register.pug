@@ -1,0 +1,45 @@
+extends ../layout
+
+block body
+  .auth-page
+    .auth-box.auth-box-wide
+      .auth-header
+        h1 LEAVEFLOW
+        p Create New Account
+      .auth-body
+        if error_msg.length
+          .msg-error= error_msg
+        form(action="/register", method="POST")
+          table(style="width:100%; border:none")
+            tr
+              td(style="width:50%; padding:0 8px 0 0; border:none; vertical-align:top")
+                .form-row
+                  label Full Name: *
+                  input(type="text", name="name", required, value=formData ? formData.name : '')
+                .form-row
+                  label Email Address: *
+                  input(type="email", name="email", required, value=formData ? formData.email : '')
+                .form-row
+                  label Employee ID: *
+                  input(type="text", name="employeeId", required, value=formData ? formData.employeeId : '')
+              td(style="width:50%; padding:0 0 0 8px; border:none; vertical-align:top")
+                .form-row
+                  label Department: *
+                  select(name="department", required)
+                    option(value="") -- Select --
+                    each dept in departments
+                      option(value=dept, selected=formData && formData.department===dept)= dept
+                .form-row
+                  label Role: *
+                  select(name="role", required)
+                    option(value="faculty", selected=!formData || formData.role==='faculty') Faculty
+                    option(value="hod", selected=formData && formData.role==='hod') HOD
+                .form-row
+                  label Password: *
+                  input(type="password", name="password", required, minlength="6")
+          .form-actions
+            button.btn.btn-primary(type="submit") REGISTER
+            a.btn.btn-default(href="/login") Back to Login
+      .auth-footer
+        | Already have an account? &nbsp;
+        a(href="/login") Login here

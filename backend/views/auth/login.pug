@@ -1,0 +1,28 @@
+extends ../layout
+
+block body
+  .auth-page
+    .auth-box
+      .auth-header
+        h1 LEAVEDESK
+        p Faculty Leave Management System
+      .auth-body
+        if success_msg.length
+          .msg-success= success_msg
+        if error_msg.length
+          .msg-error= error_msg
+        form(action="/login", method="POST")
+          .form-row
+            label Email Address:
+            input(type="email", name="email", placeholder="your@email.com", required)
+          .form-row
+            label Password:
+            input(type="password", name="password", id="password", placeholder="Enter password", required)
+            div(style="margin-top:4px")
+              button.btn.btn-default.btn-sm(type="button", id="toggle-btn", onclick="togglePwd()") Show
+          .form-row
+            button.btn.btn-primary(type="submit", style="width:100%") LOGIN
+        
+      .auth-footer
+        | Don't have an account? &nbsp;
+        a(href="/register") Register here

@@ -1,0 +1,66 @@
+extends ../layout
+
+block body
+  include ../partials/topbar
+  .wrapper
+    include ../partials/sidebar-faculty
+    .main
+      if success_msg.length
+        .msg-success= success_msg
+      .page-heading Leave Application Details
+      p
+        a(href="/faculty/my-leaves") &lt;&lt; Back to My Applications
+      .detail-grid
+        .detail-col
+          .info-box
+            h4 Leave Information
+            table.info-table
+              tr
+                td Leave Type
+                td= leave.leaveType
+              tr
+                td Start Date
+                td= new Date(leave.startDate).toLocaleDateString('en-IN', {weekday:'long', day:'2-digit', month:'long', year:'numeric'})
+              tr
+                td End Date
+                td= new Date(leave.endDate).toLocaleDateString('en-IN', {weekday:'long', day:'2-digit', month:'long', year:'numeric'})
+              tr
+                td Total Days
+                td #{leave.totalDays} day(s)
+              tr
+                td Urgent
+                td= leave.isUrgent ? 'YES' : 'No'
+              tr
+                td Applied On
+                td= new Date(leave.createdAt).toLocaleDateString('en-IN')
+        .detail-col
+          .info-box
+            h4 Status Information
+            table.info-table
+              tr
+                td Current Status
+                td
+                  span(class="badge badge-" + leave.status.toLowerCase())= leave.status
+              if leave.reviewedBy
+                tr
+                  td Reviewed By
+                  td= leave.reviewedBy.name
+              if leave.reviewedAt
+                tr
+                  td Reviewed On
+                  td= new Date(leave.reviewedAt).toLocaleDateString('en-IN')
+      .info-box(style="margin-top:12px")
+        h4 Reason for Leave
+        .reason-box= leave.reason
+      if leave.hodComment
+        .info-box
+          h4 HOD's Comment
+          .hod-comment-box= leave.hodComment
+      .form-actions
+        a.btn.btn-default(href="/faculty/my-leaves") Back to List
+        if leave.status === 'Pending'
+          |  &nbsp;
+          form(action="/faculty/leave/" + leave._id + "/cancel", method="POST", style="display:inline")
+            button.btn.btn-danger(type="submit", onclick="return confirm('Are you sure you want to cancel?')") Cancel Application
+  .site-footer
+    | Faculty Leave Management System &copy; 2024

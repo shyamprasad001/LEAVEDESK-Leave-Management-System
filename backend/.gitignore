@@ -1,0 +1,61 @@
+# ==========================================
+# Node.js & Dependencies
+# ==========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json # (Optional: Remove this line if you WANT to commit your lock file, which is usually recommended for team sync)
+
+# ==========================================
+# Environment Variables & Secrets
+# ==========================================
+# NEVER commit your .env files!
+.env
+.env.local
+.env.test
+.env.development
+.env.production
+
+# ==========================================
+# Testing & Code Coverage (Jest)
+# ==========================================
+coverage/
+.nyc_output/
+test-reporter.xml
+
+# ==========================================
+# SonarQube
+# ==========================================
+# Ignore the temporary cache folder created by sonar-scanner
+.scannerwork/
+
+# ==========================================
+# Logs & Databases
+# ==========================================
+logs/
+*.log
+*.sqlite
+*.sqlite3
+
+# ==========================================
+# OS Generated Files
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ==========================================
+# IDEs and Editors
+# ==========================================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

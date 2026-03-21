@@ -1,0 +1,24 @@
+.sidebar
+  button.sidebar-close(onclick="closeSidebar()" title="Close Menu") &times;
+  .menu-title Menu
+  ul
+    li
+      a(href="/hod/dashboard", class=title.includes('HOD Dashboard') ? 'active' : '')
+        span.icon 
+        | Dashboard
+    li
+      a(href="/hod/leave-requests", class=title.includes('Leave Requests') ? 'active' : '')
+        span.icon 
+        | Leave Requests
+    li
+      a(href="/hod/faculty", class=title.includes('Faculty Members') ? 'active' : '')
+        span.icon 
+        | Faculty Members
+    li
+      a(href="/hod/profile", class=title.includes('Profile') ? 'active' : '')
+        span.icon 
+        | My Profile
+  .logout-link
+    ul
+      li
+        a(href="/logout")  Logout

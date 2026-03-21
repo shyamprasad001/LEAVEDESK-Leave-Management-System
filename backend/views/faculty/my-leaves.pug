@@ -1,0 +1,71 @@
+extends ../layout
+
+block body
+  include ../partials/topbar
+  .wrapper
+    include ../partials/sidebar-faculty
+    .main
+      if success_msg.length
+        .msg-success= success_msg
+      if error_msg.length
+        .msg-error= error_msg
+      .page-heading My Leave Applications
+      .filter-bar
+        form(method="GET", action="/faculty/my-leaves")
+          label Filter by Status:
+          select(name="status", onchange="this.form.submit()")
+            option(value="all", selected=currentStatus==='all') All
+            option(value="Pending", selected=currentStatus==='Pending') Pending
+            option(value="Approved", selected=currentStatus==='Approved') Approved
+            option(value="Rejected", selected=currentStatus==='Rejected') Rejected
+          |
+          label Filter by Type:
+          select(name="leaveType", onchange="this.form.submit()")
+            option(value="all", selected=currentType==='all') All Types
+            each type in leaveTypes
+              option(value=type, selected=currentType===type)= type
+      p
+        a.btn.btn-primary(href="/faculty/apply")  Apply for New Leave
+      if leaves.length === 0
+        p.text-muted No records found for the selected filter.
+      else
+        .table-scroll
+          table
+            thead
+              tr
+                th #
+                th Leave Type
+                th From
+                th To
+                th Days
+                th Applied On
+                th Status
+                th HOD Comment
+                th Actions
+            tbody
+              each leave, i in leaves
+                tr(class=leave.isUrgent ? 'urgent-row' : '')
+                  td= i + 1
+                  td
+                    if leave.isUrgent
+                      span.badge.badge-urgent URGENT &nbsp;
+                    | #{leave.leaveType}
+                  td= new Date(leave.startDate).toLocaleDateString('en-IN')
+                  td= new Date(leave.endDate).toLocaleDateString('en-IN')
+                  td= leave.totalDays
+                  td= new Date(leave.createdAt).toLocaleDateString('en-IN')
+                  td
+                    span(class="badge badge-" + leave.status.toLowerCase())= leave.status
+                  td
+                    if leave.hodComment
+                      | #{leave.hodComment.substring(0,40)}#{leave.hodComment.length > 40 ? '...' : ''}
+                    else
+                      span.text-muted -
+                  td
+                    a.btn.btn-default.btn-sm(href="/faculty/leave/" + leave._id) View
+                    if leave.status === 'Pending'
+                      |  &nbsp;
+                      form(action="/faculty/leave/" + leave._id + "/cancel", method="POST", style="display:inline")
+                        button.btn.btn-danger.btn-sm(type="submit", onclick="return confirm('Cancel this application?')") Cancel
+  .site-footer
+    | Faculty Leave Management System &copy; 2024

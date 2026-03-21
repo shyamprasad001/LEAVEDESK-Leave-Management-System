@@ -1,0 +1,12 @@
+.navbar
+  button.menu-toggle(onclick="openSidebar()" title="Open Menu") &#9776;
+  a.site-title(href="#") LEAVEDESK
+  .nav-links
+    span.nav-user
+      strong= user.name
+      br
+      | &nbsp; &nbsp; &nbsp;
+      span(style="color:#aabbff")= user.department
+  .nav-links
+    a(href="/logout") Logout
+.sidebar-overlay

@@ -1,0 +1,38 @@
+extends ../layout
+
+block body
+  include ../partials/topbar
+  .wrapper
+    include ../partials/sidebar-hod
+    .main
+      .page-heading Faculty Members — #{user.department} (#{facultyList.length} members)
+      if facultyList.length === 0
+        p.text-muted No faculty members registered in your department.
+      else
+        .table-scroll
+          table
+            thead
+              tr
+                th #
+                th Employee ID
+                th Name
+                th Designation
+                th Email
+                th Total Leaves
+                th Pending
+            tbody
+              each faculty, i in facultyList
+                tr
+                  td= i + 1
+                  td= faculty.employeeId
+                  td= faculty.name
+                  td= faculty.designation
+                  td= faculty.email
+                  td= faculty.leaveCount
+                  td
+                    if faculty.pendingCount > 0
+                      span.badge.badge-pending= faculty.pendingCount
+                    else
+                      | 0
+  .site-footer
+    | Faculty Leave Management System &copy; 2024

@@ -1,0 +1,24 @@
+.sidebar
+  button.sidebar-close(onclick="closeSidebar()" title="Close Menu") &times;
+  .menu-title Menu
+  ul
+    li
+      a(href="/faculty/dashboard", class=title.includes('Dashboard') ? 'active' : '')
+        span.icon 
+        | Dashboard
+    li
+      a(href="/faculty/apply", class=title.includes('Apply') ? 'active' : '')
+        span.icon 
+        | Apply for Leave
+    li
+      a(href="/faculty/my-leaves", class=title.includes('My Leave') ? 'active' : '')
+        span.icon 
+        | My Applications
+    li
+      a(href="/faculty/profile", class=title.includes('Profile') ? 'active' : '')
+        span.icon 
+        | My Profile
+  .logout-link
+    ul
+      li
+        a(href="/logout")  Logout

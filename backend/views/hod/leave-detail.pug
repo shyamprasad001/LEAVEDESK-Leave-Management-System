@@ -1,0 +1,89 @@
+extends ../layout
+
+block body
+  include ../partials/topbar
+  .wrapper
+    include ../partials/sidebar-hod
+    .main
+      if success_msg.length
+        .msg-success= success_msg
+      if error_msg.length
+        .msg-error= error_msg
+      .page-heading Review Leave Request
+      p
+        a(href="/hod/leave-requests") &lt;&lt; Back to Leave Requests
+      .detail-grid
+        .detail-col
+          .info-box
+            h4 Faculty Information
+            table.info-table
+              tr
+                td Name
+                td= leave.faculty.name
+              tr
+                td Employee ID
+                td= leave.faculty.employeeId
+              tr
+                td Designation
+                td= leave.faculty.designation
+              tr
+                td Email
+                td= leave.faculty.email
+              if leave.faculty.phone
+                tr
+                  td Phone
+                  td= leave.faculty.phone
+        .detail-col
+          .info-box
+            h4 Leave Details
+            table.info-table
+              tr
+                td Leave Type
+                td= leave.leaveType
+              tr
+                td Start Date
+                td= new Date(leave.startDate).toLocaleDateString('en-IN', {weekday:'long', day:'2-digit', month:'long', year:'numeric'})
+              tr
+                td End Date
+                td= new Date(leave.endDate).toLocaleDateString('en-IN', {weekday:'long', day:'2-digit', month:'long', year:'numeric'})
+              tr
+                td Total Days
+                td #{leave.totalDays} day(s)
+              tr
+                td Urgent
+                td= leave.isUrgent ? 'YES - Emergency' : 'No'
+              tr
+                td Applied On
+                td= new Date(leave.createdAt).toLocaleDateString('en-IN')
+              tr
+                td Status
+                td
+                  span(class="badge badge-" + leave.status.toLowerCase())= leave.status
+      .info-box(style="margin-top:12px")
+        h4 Reason for Leave
+        .reason-box= leave.reason
+      if leave.hodComment
+        .info-box
+          h4 HOD's Previous Comment
+          .hod-comment-box= leave.hodComment
+      if leave.reviewedBy
+        p.text-muted
+          | Reviewed by #{leave.reviewedBy.name} on #{new Date(leave.reviewedAt).toLocaleDateString('en-IN')}
+      if leave.status === 'Pending'
+        .review-box
+          h3 Approve / Reject This Application
+          form(action="/hod/leave/" + leave._id + "/review", method="POST")
+            .form-row
+              label Your Comment (optional):
+              textarea(name="hodComment", placeholder="Add a remark for the faculty member...", style="height:70px")
+            .form-actions
+              button.btn.btn-success(type="submit", name="action", value="approve", onclick="return confirm('Approve this leave?')") APPROVE LEAVE
+              |  &nbsp;
+              button.btn.btn-danger(type="submit", name="action", value="reject", onclick="return confirm('Reject this leave?')") REJECT LEAVE
+              |  &nbsp;
+              a.btn.btn-default(href="/hod/leave-requests") Cancel
+      else
+        .form-actions
+          a.btn.btn-default(href="/hod/leave-requests") Back to List
+  .site-footer
+    | Faculty Leave Management System &copy; 2024

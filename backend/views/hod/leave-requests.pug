@@ -1,0 +1,61 @@
+extends ../layout
+
+block body
+  include ../partials/topbar
+  .wrapper
+    include ../partials/sidebar-hod
+    .main
+      if success_msg.length
+        .msg-success= success_msg
+      .page-heading Leave Requests — #{user.department}
+      .filter-bar
+        form(method="GET", action="/hod/leave-requests")
+          label Filter by Status:
+          select(name="status", onchange="this.form.submit()")
+            option(value="all", selected=currentStatus==='all') All
+            option(value="Pending", selected=currentStatus==='Pending') Pending
+            option(value="Approved", selected=currentStatus==='Approved') Approved
+            option(value="Rejected", selected=currentStatus==='Rejected') Rejected
+          |
+          label Leave Type:
+          select(name="leaveType", onchange="this.form.submit()")
+            option(value="all", selected=currentType==='all') All Types
+            each type in leaveTypes
+              option(value=type, selected=currentType===type)= type
+      if leaves.length === 0
+        p.text-muted No records found for selected filter.
+      else
+        .table-scroll
+          table
+            thead
+              tr
+                th #
+                th Faculty Name
+                th Designation
+                th Leave Type
+                th From
+                th To
+                th Days
+                th Applied On
+                th Status
+                th Action
+            tbody
+              each leave, i in leaves
+                tr(class=leave.isUrgent && leave.status==='Pending' ? 'urgent-row' : '')
+                  td= i + 1
+                  td= leave.faculty.name
+                  td= leave.faculty.designation
+                  td
+                    if leave.isUrgent
+                      span.badge.badge-urgent URGENT &nbsp;
+                    | #{leave.leaveType}
+                  td= new Date(leave.startDate).toLocaleDateString('en-IN')
+                  td= new Date(leave.endDate).toLocaleDateString('en-IN')
+                  td= leave.totalDays
+                  td= new Date(leave.createdAt).toLocaleDateString('en-IN')
+                  td
+                    span(class="badge badge-" + leave.status.toLowerCase())= leave.status
+                  td
+                    a.btn.btn-default.btn-sm(href="/hod/leave/" + leave._id) Review
+  .site-footer
+    | Faculty Leave Management System &copy; 2024

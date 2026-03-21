@@ -1,0 +1,40 @@
+extends ../layout
+
+block body
+  include ../partials/topbar
+  .wrapper
+    include ../partials/sidebar-faculty
+    .main
+      if error_msg.length
+        .msg-error= error_msg
+      .page-heading Apply for Leave
+      .form-box
+        h3 Leave Application Form
+        form(action="/faculty/apply", method="POST")
+          .form-row
+            label Leave Type: *
+            select.form-control(name="leaveType", required)
+              option(value="") -- Select Leave Type --
+              each type in leaveTypes
+                option(value=type)= type
+          .form-row
+            label Start Date: *
+            input(type="date", name="startDate", required, min=new Date().toISOString().split('T')[0])
+          .form-row
+            label End Date: *
+            input(type="date", name="endDate", required, min=new Date().toISOString().split('T')[0])
+          .form-row
+            label Reason for Leave: *
+            textarea(name="reason", maxlength="500", required, placeholder="Explain your reason here...")
+            .hint
+              | Characters: &nbsp;
+              span#reason-counter 0/500
+          .form-row
+            .checkbox-row
+              input(type="checkbox", name="isUrgent", id="isUrgent")
+              label(for="isUrgent") Mark as Urgent (Emergency only)
+          .form-actions
+            button.btn.btn-primary(type="submit") SUBMIT APPLICATION
+            a.btn.btn-default(href="/faculty/dashboard") Cancel
+  .site-footer
+    | Faculty Leave Management System &copy; 2024

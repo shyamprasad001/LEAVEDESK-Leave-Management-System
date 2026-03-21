@@ -1,0 +1,33 @@
+extends ../layout
+
+block body
+  include ../partials/topbar
+  .wrapper
+    include ../partials/sidebar-faculty
+    .main
+      .page-heading My Profile
+      .profile-header
+        .profile-avatar= profileUser.name.charAt(0).toUpperCase()
+        div
+          .ph-name= profileUser.name
+          .ph-role= profileUser.role.toUpperCase() + ' — ' + profileUser.department
+      .info-box
+        h4 Personal Information
+        table.info-table
+          tr
+            td Employee ID
+            td= profileUser.employeeId
+          tr
+            td Full Name
+            td= profileUser.name
+          tr
+            td Email
+            td= profileUser.email
+          tr
+            td Department
+            td= profileUser.department
+          tr
+            td Role
+            td= profileUser.role.toUpperCase()
+  .site-footer
+    | Faculty Leave Management System &copy; 2024
