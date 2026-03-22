@@ -57,7 +57,7 @@ npm install
 
 ### Step 2 — Configure environment
 ```bash
-cp .env.example .env
+cp .env .env
 ```
 Edit `.env` and add your MongoDB Atlas URI:
 ```env
