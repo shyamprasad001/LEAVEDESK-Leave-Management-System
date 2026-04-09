@@ -2,5 +2,5 @@ projectKey=faculty-leave-system
 serverUrl=http://localhost:9000
 serverVersion=25.12.0.117093
 dashboardUrl=http://localhost:9000/dashboard?id=faculty-leave-system
-ceTaskId=f7e2a0f6-5e5b-42bd-8b79-e083552ef805
-ceTaskUrl=http://localhost:9000/api/ce/task?id=f7e2a0f6-5e5b-42bd-8b79-e083552ef805
+ceTaskId=0d6346c7-eaff-44a7-b76a-6fcd06bd8ebb
+ceTaskUrl=http://localhost:9000/api/ce/task?id=0d6346c7-eaff-44a7-b76a-6fcd06bd8ebb

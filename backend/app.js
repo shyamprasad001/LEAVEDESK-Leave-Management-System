@@ -4,8 +4,13 @@ const session = require("express-session");
 const flash = require("connect-flash");
 const path = require("path");
 require("dotenv").config();
+const helmet = require("helmet");
+
 const app = express();
 
+// 🔐 Security
+app.disable("x-powered-by"); // Hide Express
+app.use(helmet());  
 // MongoDB Connection
 
 mongoose
