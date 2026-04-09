@@ -4,11 +4,14 @@ block body
   .auth-page
     .auth-box.auth-box-wide
       .auth-header
-        h1 LEAVEFLOW
+        h1 LEAVEDESK
         p Create New Account
       .auth-body
+        if success_msg.length
+          .msg-success= success_msg
         if error_msg.length
           .msg-error= error_msg
+        
         form(action="/register", method="POST")
           table(style="width:100%; border:none")
             tr
@@ -17,8 +20,9 @@ block body
                   label Full Name: *
                   input(type="text", name="name", required, value=formData ? formData.name : '')
                 .form-row
-                  label Email Address: *
-                  input(type="email", name="email", required, value=formData ? formData.email : '')
+                  label College Email: *
+                  input(type="email", name="email", required, value=formData ? formData.email : '', placeholder="mail@acoe.edu.in")
+                  
                 .form-row
                   label Employee ID: *
                   input(type="text", name="employeeId", required, value=formData ? formData.employeeId : '')
@@ -37,8 +41,11 @@ block body
                 .form-row
                   label Password: *
                   input(type="password", name="password", required, minlength="6")
+                .form-row
+                  label Confirm Password: *
+                  input(type="password", name="confirmPassword", required, minlength="6")
           .form-actions
-            button.btn.btn-primary(type="submit") REGISTER
+            button.btn.btn-primary(type="submit") SEND OTP & REGISTER
             a.btn.btn-default(href="/login") Back to Login
       .auth-footer
         | Already have an account? &nbsp;

@@ -1,0 +1,40 @@
+extends ../layout
+
+block body
+  .auth-page
+    .auth-box
+      .auth-header
+        h1 LEAVEDESK
+        p Verify Your Email
+      .auth-body
+        if success_msg.length
+          .msg-success= success_msg
+        if error_msg.length
+          .msg-error= error_msg
+        p.otp-info
+          | An OTP has been sent to&nbsp;
+          strong= email
+          | . Enter it below to complete registration.
+        form(action="/verify-otp", method="POST")
+          .form-row
+            label Enter OTP: *
+            input(
+              type="text",
+              name="otp",
+              required,
+              maxlength="6",
+              pattern="[0-9]{6}",
+              placeholder="6-digit OTP",
+              autocomplete="one-time-code",
+              style="letter-spacing:8px;font-size:22px;text-align:center"
+            )
+          .form-actions
+            button.btn.btn-primary(type="submit") VERIFY OTP
+            a.btn.btn-default(href="/register") Back
+
+        form(action="/resend-otp", method="POST", style="margin-top:14px;text-align:center")
+          button.btn.btn-default(type="submit", style="font-size:13px;padding:6px 16px") Resend OTP
+
+      .auth-footer
+        | Wrong email?&nbsp;
+        a(href="/register") Register again

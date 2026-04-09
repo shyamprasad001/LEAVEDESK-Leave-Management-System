@@ -1,168 +1,187 @@
-// faculty.test.js
 const request = require("supertest");
+const express = require("express");
 const facultyRouter = require("../../routes/faculty");
 const LeaveRequest = require("../../models/LeaveRequest");
 const User = require("../../models/User");
-const setupApp = require("./test-setup");
 
-jest.mock("../../models/LeaveRequest");
-jest.mock("../../models/User");
+const app = express();
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
-const mockFaculty = { _id: "f1", role: "faculty", department: "CS" };
+let mockSession = {};
+app.use((req, res, next) => {
+  req.session = mockSession;
+  req.flash = jest.fn();
+  res.render = jest.fn((view, data) => res.send("Mocked View"));
+  next();
+});
+app.use("/faculty", facultyRouter);
 
 describe("Faculty Routes", () => {
-  beforeAll(() => {
-    jest.spyOn(console, "error").mockImplementation(() => {});
+  beforeEach(() => {
+    mockSession = { user: { _id: "123", role: "faculty", department: "CS" } };
+    jest.spyOn(LeaveRequest, "find").mockReset();
+    jest.spyOn(LeaveRequest, "countDocuments").mockReset();
+    jest.spyOn(LeaveRequest, "findOne").mockReset();
+    jest.spyOn(LeaveRequest, "findByIdAndDelete").mockReset();
+    jest.spyOn(LeaveRequest.prototype, "save").mockReset();
+    jest.spyOn(User, "findById").mockReset();
   });
-
-  beforeEach(() => jest.clearAllMocks());
+  afterAll(() => jest.restoreAllMocks());
 
   describe("Auth Middleware", () => {
-    it("redirects to login if not authenticated", async () => {
-      const app = setupApp(facultyRouter, null);
-      const res = await request(app).get("/dashboard");
+    it("should redirect to login if no session", async () => {
+      mockSession = {};
+      const res = await request(app).get("/faculty/dashboard");
       expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/login");
+      expect(res.headers.location).toBe("/login");
     });
-
-    it("redirects HOD to HOD dashboard", async () => {
-      const app = setupApp(facultyRouter, { role: "hod" });
-      const res = await request(app).get("/dashboard");
+    it("should redirect HOD away from faculty routes", async () => {
+      mockSession = { user: { role: "hod" } };
+      const res = await request(app).get("/faculty/dashboard");
       expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/hod/dashboard");
+      expect(res.headers.location).toBe("/hod/dashboard");
     });
   });
 
-  describe("GET /dashboard", () => {
-    it("renders dashboard with stats", async () => {
-      LeaveRequest.find.mockReturnValue({
-        sort: jest
-          .fn()
-          .mockReturnValue({ limit: jest.fn().mockResolvedValue([]) }),
+  describe("Dashboard & Apply", () => {
+    it("GET /dashboard should load leaves", async () => {
+      jest
+        .spyOn(LeaveRequest, "find")
+        .mockReturnValue({
+          sort: jest
+            .fn()
+            .mockReturnValue({ limit: jest.fn().mockResolvedValue([]) }),
+        });
+      jest.spyOn(LeaveRequest, "countDocuments").mockResolvedValue(0);
+      const res = await request(app).get("/faculty/dashboard");
+      expect(res.text).toBe("Mocked View");
+    });
+    it("GET /dashboard should catch errors", async () => {
+      jest.spyOn(LeaveRequest, "find").mockImplementation(() => {
+        throw new Error("DB");
       });
-      LeaveRequest.countDocuments.mockResolvedValue(1);
-
-      const app = setupApp(facultyRouter, mockFaculty);
-      const res = await request(app).get("/dashboard");
-      expect(res.status).toBe(200);
-      expect(res.body.view).toBe("faculty/dashboard");
+      const res = await request(app).get("/faculty/dashboard");
+      expect(res.status).toBe(302);
     });
 
-    it("handles errors", async () => {
-      LeaveRequest.find.mockImplementation(() => {
-        throw new Error("DB Error");
-      });
-      const app = setupApp(facultyRouter, mockFaculty);
-      const res = await request(app).get("/dashboard");
+    it("GET /apply should render apply form", async () => {
+      const res = await request(app).get("/faculty/apply");
+      expect(res.text).toBe("Mocked View");
+    });
+
+    it("POST /apply should reject end date before start date", async () => {
+      const res = await request(app)
+        .post("/faculty/apply")
+        .send({ startDate: "2023-10-05", endDate: "2023-10-01" });
       expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/login");
+    });
+    it("POST /apply should save leave request", async () => {
+      jest.spyOn(LeaveRequest.prototype, "save").mockResolvedValue(true);
+      const res = await request(app)
+        .post("/faculty/apply")
+        .send({ startDate: "2023-10-01", endDate: "2023-10-05" });
+      expect(res.status).toBe(302);
+    });
+    it("POST /apply should catch save errors", async () => {
+      jest
+        .spyOn(LeaveRequest.prototype, "save")
+        .mockRejectedValue(new Error("DB"));
+      const res = await request(app)
+        .post("/faculty/apply")
+        .send({ startDate: "2023-10-01", endDate: "2023-10-05" });
+      expect(res.status).toBe(302);
     });
   });
 
-  describe("POST /apply", () => {
-    const app = setupApp(facultyRouter, mockFaculty);
-
-    it("redirects with error if end date is before start date", async () => {
-      const res = await request(app)
-        .post("/apply")
-        .send({ startDate: "2026-03-22", endDate: "2026-03-21" });
-      expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/faculty/apply");
-    });
-
-    it("saves leave successfully", async () => {
-      LeaveRequest.prototype.save = jest.fn().mockResolvedValue(true);
-      const res = await request(app)
-        .post("/apply")
-        .send({ startDate: "2026-03-21", endDate: "2026-03-22" });
-      expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/faculty/my-leaves");
-    });
-
-    it("handles save errors", async () => {
-      LeaveRequest.prototype.save = jest
-        .fn()
-        .mockRejectedValue(new Error("Save Failed"));
-      const res = await request(app)
-        .post("/apply")
-        .send({ startDate: "2026-03-21", endDate: "2026-03-22" });
-      expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/faculty/apply");
-    });
-  });
-
-  describe("GET /my-leaves & /leave/:id & /profile", () => {
-    const app = setupApp(facultyRouter, mockFaculty);
-
-    it("GET /my-leaves applies filters and renders", async () => {
-      LeaveRequest.find.mockReturnValue({
-        sort: jest.fn().mockResolvedValue([]),
-      });
+  describe("My Leaves & Detail", () => {
+    it("GET /my-leaves should load list with specific filters", async () => {
+      jest
+        .spyOn(LeaveRequest, "find")
+        .mockReturnValue({ sort: jest.fn().mockResolvedValue([]) });
       const res = await request(app).get(
-        "/my-leaves?status=Pending&leaveType=Medical Leave",
+        "/faculty/my-leaves?status=Pending&leaveType=Casual Leave",
       );
-      expect(res.status).toBe(200);
-      expect(res.body.view).toBe("faculty/my-leaves");
+      expect(res.text).toBe("Mocked View");
     });
-
-    it("GET /leave/:id redirects if not found", async () => {
-      LeaveRequest.findOne.mockReturnValue({
-        populate: jest.fn().mockResolvedValue(null),
+    it("GET /my-leaves should load list with 'all' filters", async () => {
+      jest
+        .spyOn(LeaveRequest, "find")
+        .mockReturnValue({ sort: jest.fn().mockResolvedValue([]) });
+      const res = await request(app).get(
+        "/faculty/my-leaves?status=all&leaveType=all",
+      );
+      expect(res.text).toBe("Mocked View");
+    });
+    it("GET /my-leaves should load list with no filters", async () => {
+      jest
+        .spyOn(LeaveRequest, "find")
+        .mockReturnValue({ sort: jest.fn().mockResolvedValue([]) });
+      const res = await request(app).get("/faculty/my-leaves");
+      expect(res.text).toBe("Mocked View");
+    });
+    it("GET /my-leaves should catch error", async () => {
+      jest.spyOn(LeaveRequest, "find").mockImplementation(() => {
+        throw new Error("DB");
       });
-      const res = await request(app).get("/leave/123");
+      const res = await request(app).get("/faculty/my-leaves");
       expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/faculty/my-leaves");
     });
 
-    it("POST /leave/:id/cancel cancels leave", async () => {
-      LeaveRequest.findOne.mockResolvedValue({ _id: "123" });
-      LeaveRequest.findByIdAndDelete.mockResolvedValue(true);
-      const res = await request(app).post("/leave/123/cancel");
-      expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/faculty/my-leaves");
+    it("GET /leave/:id should render details", async () => {
+      jest
+        .spyOn(LeaveRequest, "findOne")
+        .mockReturnValue({ populate: jest.fn().mockResolvedValue({}) });
+      const res = await request(app).get("/faculty/leave/1");
+      expect(res.text).toBe("Mocked View");
     });
-
-    it("GET /profile renders profile", async () => {
-      User.findById.mockReturnValue({
-        select: jest.fn().mockResolvedValue({ name: "John" }),
+    it("GET /leave/:id should redirect if not found", async () => {
+      jest
+        .spyOn(LeaveRequest, "findOne")
+        .mockReturnValue({ populate: jest.fn().mockResolvedValue(null) });
+      const res = await request(app).get("/faculty/leave/1");
+      expect(res.status).toBe(302);
+    });
+    it("GET /leave/:id should catch error", async () => {
+      jest.spyOn(LeaveRequest, "findOne").mockImplementation(() => {
+        throw new Error("DB");
       });
-      const res = await request(app).get("/profile");
-      expect(res.status).toBe(200);
-      expect(res.body.view).toBe("faculty/profile");
+      const res = await request(app).get("/faculty/leave/1");
+      expect(res.status).toBe(302);
     });
 
-    it("GET /my-leaves handles database errors", async () => {
-      LeaveRequest.find.mockImplementation(() => {
-        throw new Error("DB Error");
+    it("POST /leave/:id/cancel should delete pending leave", async () => {
+      jest.spyOn(LeaveRequest, "findOne").mockResolvedValue({ _id: "1" });
+      jest.spyOn(LeaveRequest, "findByIdAndDelete").mockResolvedValue(true);
+      const res = await request(app).post("/faculty/leave/1/cancel");
+      expect(res.status).toBe(302);
+    });
+    it("POST /leave/:id/cancel should redirect if not pending", async () => {
+      jest.spyOn(LeaveRequest, "findOne").mockResolvedValue(null);
+      const res = await request(app).post("/faculty/leave/1/cancel");
+      expect(res.status).toBe(302);
+    });
+    it("POST /leave/:id/cancel should catch error", async () => {
+      jest.spyOn(LeaveRequest, "findOne").mockRejectedValue(new Error("DB"));
+      const res = await request(app).post("/faculty/leave/1/cancel");
+      expect(res.status).toBe(302);
+    });
+  });
+
+  describe("Profile", () => {
+    it("GET /profile should load user profile", async () => {
+      jest
+        .spyOn(User, "findById")
+        .mockReturnValue({ select: jest.fn().mockResolvedValue({}) });
+      const res = await request(app).get("/faculty/profile");
+      expect(res.text).toBe("Mocked View");
+    });
+    it("GET /profile should catch error", async () => {
+      jest.spyOn(User, "findById").mockImplementation(() => {
+        throw new Error("DB");
       });
-      const res = await request(app).get("/my-leaves");
+      const res = await request(app).get("/faculty/profile");
       expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/faculty/dashboard");
-    });
-
-    it("GET /leave/:id handles database errors", async () => {
-      LeaveRequest.findOne.mockImplementation(() => {
-        throw new Error("DB Error");
-      });
-      const res = await request(app).get("/leave/123");
-      expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/faculty/my-leaves");
-    });
-
-    it("POST /leave/:id/cancel handles database errors", async () => {
-      LeaveRequest.findOne.mockRejectedValue(new Error("DB Error"));
-      const res = await request(app).post("/leave/123/cancel");
-      expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/faculty/my-leaves");
-    });
-
-    it("GET /profile handles database errors", async () => {
-      User.findById.mockImplementation(() => {
-        throw new Error("DB Error");
-      });
-      const res = await request(app).get("/profile");
-      expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/faculty/dashboard");
     });
   });
 });

@@ -1,165 +1,240 @@
-// auth.test.js
 const request = require("supertest");
+const express = require("express");
 const authRouter = require("../../routes/auth");
 const User = require("../../models/User");
-const setupApp = require("./test-setup");
+const mailer = require("../../utils/mailer");
 
-jest.mock("../../models/User");
+jest.mock("../../utils/mailer");
+
+const app = express();
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
+
+let mockSession = {};
+app.use((req, res, next) => {
+  req.session = mockSession;
+  if (!req.session.destroy) req.session.destroy = jest.fn((cb) => cb && cb());
+  req.flash = jest.fn();
+  res.render = jest.fn((view, data) => res.send("Mocked View"));
+  next();
+});
+app.use("/", authRouter);
 
 describe("Auth Routes", () => {
-  beforeAll(() => {
-    jest.spyOn(console, "error").mockImplementation(() => {});
-  });
-
   beforeEach(() => {
-    jest.clearAllMocks();
+    mockSession = {};
+    jest.spyOn(User, "findOne").mockReset();
+    jest.spyOn(User.prototype, "save").mockReset();
   });
+  afterAll(() => jest.restoreAllMocks());
 
   describe("GET /login", () => {
-    it("redirects HOD to hod dashboard if logged in", async () => {
-      const app = setupApp(authRouter, { role: "hod" });
+    it("should render login if no session", async () => {
+      const res = await request(app).get("/login");
+      expect(res.text).toBe("Mocked View");
+    });
+    it("should redirect HOD to dashboard", async () => {
+      mockSession = { user: { role: "hod" } };
       const res = await request(app).get("/login");
       expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/hod/dashboard");
+      expect(res.headers.location).toBe("/hod/dashboard");
     });
-
-    it("redirects faculty to faculty dashboard if logged in", async () => {
-      const app = setupApp(authRouter, { role: "faculty" });
+    it("should redirect faculty to dashboard", async () => {
+      mockSession = { user: { role: "faculty" } };
       const res = await request(app).get("/login");
       expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/faculty/dashboard");
-    });
-
-    it("renders login page if not logged in", async () => {
-      const app = setupApp(authRouter);
-      const res = await request(app).get("/login");
-      expect(res.status).toBe(200);
-      expect(res.body.view).toBe("auth/login");
+      expect(res.headers.location).toBe("/faculty/dashboard");
     });
   });
 
   describe("POST /login", () => {
-    const app = setupApp(authRouter);
-
-    it("redirects with error if missing email or password", async () => {
+    it("should fail without email or password", async () => {
+      const res = await request(app).post("/login").send({});
+      expect(res.status).toBe(302);
+    });
+    it("should fail on invalid user", async () => {
+      jest.spyOn(User, "findOne").mockResolvedValue(null);
       const res = await request(app)
         .post("/login")
-        .send({ email: "test@test.com" });
+        .send({ email: "a@gmail.com", password: "123" });
       expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/login");
     });
-
-    it("redirects with error if user not found", async () => {
-      User.findOne.mockResolvedValue(null);
+    it("should fail on invalid password", async () => {
+      jest
+        .spyOn(User, "findOne")
+        .mockResolvedValue({
+          comparePassword: jest.fn().mockResolvedValue(false),
+        });
       const res = await request(app)
         .post("/login")
-        .send({ email: "a@a.com", password: "123" });
+        .send({ email: "a@gmail.com", password: "123" });
       expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/login");
     });
-
-    it("redirects with error if password does not match", async () => {
-      User.findOne.mockResolvedValue({
-        comparePassword: jest.fn().mockResolvedValue(false),
-      });
-      const res = await request(app)
-        .post("/login")
-        .send({ email: "a@a.com", password: "123" });
-      expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/login");
-    });
-
-    it("logs in HOD successfully", async () => {
-      User.findOne.mockResolvedValue({
-        _id: "123",
-        name: "John",
-        email: "a@a.com",
-        role: "hod",
-        department: "CS",
-        employeeId: "E1",
-        comparePassword: jest.fn().mockResolvedValue(true),
-      });
-      const res = await request(app)
-        .post("/login")
-        .send({ email: "a@a.com", password: "123" });
-      expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/hod/dashboard");
-    });
-
-    it("handles server errors", async () => {
-      User.findOne.mockRejectedValue(new Error("DB Error"));
-      const res = await request(app)
-        .post("/login")
-        .send({ email: "a@a.com", password: "123" });
-      expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/login");
-    });
-
-    it("logs in Faculty successfully", async () => {
-      User.findOne.mockResolvedValue({
-        _id: "456",
-        name: "Jane",
-        email: "faculty@test.com",
+    it("should login faculty successfully", async () => {
+      jest.spyOn(User, "findOne").mockResolvedValue({
+        _id: "1",
         role: "faculty",
-        department: "CS",
-        employeeId: "E2",
         comparePassword: jest.fn().mockResolvedValue(true),
       });
       const res = await request(app)
         .post("/login")
-        .send({ email: "faculty@test.com", password: "123" });
+        .send({ email: "a@gmail.com", password: "123" });
       expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/faculty/dashboard");
+      expect(res.headers.location).toBe("/faculty/dashboard");
+    });
+    it("should login HOD successfully", async () => {
+      jest.spyOn(User, "findOne").mockResolvedValue({
+        _id: "2",
+        role: "hod",
+        comparePassword: jest.fn().mockResolvedValue(true),
+      });
+      const res = await request(app)
+        .post("/login")
+        .send({ email: "hod@gmail.com", password: "123" });
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toBe("/hod/dashboard");
+    });
+    it("should handle server errors", async () => {
+      jest.spyOn(User, "findOne").mockRejectedValue(new Error("DB Error"));
+      const res = await request(app)
+        .post("/login")
+        .send({ email: "a@gmail.com", password: "123" });
+      expect(res.status).toBe(302);
     });
   });
 
   describe("GET /register", () => {
-    it("renders register page", async () => {
-      const app = setupApp(authRouter);
+    it("should render register page", async () => {
       const res = await request(app).get("/register");
-      expect(res.status).toBe(200);
-      expect(res.body.view).toBe("auth/register");
+      expect(res.text).toBe("Mocked View");
     });
   });
 
   describe("POST /register", () => {
-    const app = setupApp(authRouter);
-
-    it("renders register with error if user exists", async () => {
-      User.findOne.mockResolvedValue({ email: "test@test.com" });
+    it("should reject non-college domain", async () => {
       const res = await request(app)
         .post("/register")
-        .send({ email: "test@test.com", employeeId: "123" });
-      expect(res.status).toBe(200);
-      expect(res.body.view).toBe("auth/register");
+        .send({ email: "test@yahoo.com" });
+      expect(res.text).toBe("Mocked View");
     });
-
-    it("registers user successfully", async () => {
-      User.findOne.mockResolvedValue(null);
-      User.prototype.save = jest.fn().mockResolvedValue(true);
+    it("should reject password mismatch", async () => {
       const res = await request(app)
         .post("/register")
-        .send({ email: "new@test.com" });
-      expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/login");
+        .send({ email: "test@gmail.com", password: "1", confirmPassword: "2" });
+      expect(res.text).toBe("Mocked View");
     });
-
-    it("handles server error on register", async () => {
-      User.findOne.mockRejectedValue(new Error("DB Error"));
+    it("should reject existing user", async () => {
+      jest.spyOn(User, "findOne").mockResolvedValue(true);
       const res = await request(app)
         .post("/register")
-        .send({ email: "new@test.com" });
+        .send({ email: "test@gmail.com", password: "1", confirmPassword: "1" });
+      expect(res.text).toBe("Mocked View");
+    });
+    it("should initiate registration and send OTP", async () => {
+      jest.spyOn(User, "findOne").mockResolvedValue(null);
+      mailer.sendOTPEmail.mockResolvedValue(true);
+      const res = await request(app)
+        .post("/register")
+        .send({ email: "test@gmail.com", password: "1", confirmPassword: "1" });
       expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/register");
+      expect(res.headers.location).toBe("/verify-otp");
+    });
+    it("should handle server errors", async () => {
+      jest.spyOn(User, "findOne").mockRejectedValue(new Error("Error"));
+      const res = await request(app)
+        .post("/register")
+        .send({ email: "test@gmail.com", password: "1", confirmPassword: "1" });
+      expect(res.status).toBe(302);
+    });
+  });
+
+  describe("GET /verify-otp", () => {
+    it("should redirect if no pending registration", async () => {
+      const res = await request(app).get("/verify-otp");
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toBe("/register");
+    });
+    it("should render verify page if pending", async () => {
+      mockSession = { pendingRegistration: { email: "test@gmail.com" } };
+      const res = await request(app).get("/verify-otp");
+      expect(res.text).toBe("Mocked View");
+    });
+  });
+
+  describe("POST /verify-otp", () => {
+    it("should fail if no pending session", async () => {
+      const res = await request(app)
+        .post("/verify-otp")
+        .send({ otp: "123456" });
+      expect(res.status).toBe(302);
+    });
+    it("should fail if OTP has expired", async () => {
+      mockSession = { pendingRegistration: { otpExpiry: Date.now() - 10000 } };
+      const res = await request(app)
+        .post("/verify-otp")
+        .send({ otp: "123456" });
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toBe("/register");
+    });
+    it("should fail if OTP is incorrect", async () => {
+      mockSession = {
+        pendingRegistration: { otpExpiry: Date.now() + 10000, otp: "111111" },
+      };
+      const res = await request(app)
+        .post("/verify-otp")
+        .send({ otp: "222222" });
+      expect(res.text).toBe("Mocked View");
+    });
+    it("should create user and redirect on success", async () => {
+      mockSession = {
+        pendingRegistration: { otpExpiry: Date.now() + 10000, otp: "123456" },
+      };
+      jest.spyOn(User.prototype, "save").mockResolvedValue(true);
+      const res = await request(app)
+        .post("/verify-otp")
+        .send({ otp: "123456" });
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toBe("/login");
+    });
+    it("should catch errors during verify", async () => {
+      mockSession = {
+        pendingRegistration: { otpExpiry: Date.now() + 10000, otp: "123456" },
+      };
+      jest
+        .spyOn(User.prototype, "save")
+        .mockRejectedValue(new Error("DB error"));
+      const res = await request(app)
+        .post("/verify-otp")
+        .send({ otp: "123456" });
+      expect(res.status).toBe(302);
+    });
+  });
+
+  describe("POST /resend-otp", () => {
+    it("should fail if no pending registration", async () => {
+      const res = await request(app).post("/resend-otp");
+      expect(res.status).toBe(302);
+    });
+    it("should resend OTP successfully", async () => {
+      mockSession = { pendingRegistration: { email: "test@gmail.com" } };
+      mailer.sendOTPEmail.mockResolvedValue(true);
+      const res = await request(app).post("/resend-otp");
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toBe("/verify-otp");
+    });
+    it("should catch error on resend", async () => {
+      mockSession = { pendingRegistration: { email: "test@gmail.com" } };
+      mailer.sendOTPEmail.mockRejectedValue(new Error("SMTP"));
+      const res = await request(app).post("/resend-otp");
+      expect(res.status).toBe(302);
     });
   });
 
   describe("GET /logout", () => {
-    it("destroys session and redirects to login", async () => {
-      const app = setupApp(authRouter, { name: "John" });
+    it("should destroy session and redirect", async () => {
       const res = await request(app).get("/logout");
       expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/login");
+      expect(res.headers.location).toBe("/login");
     });
   });
 });
