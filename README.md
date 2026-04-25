@@ -81,15 +81,6 @@ Visit **http://localhost:3000**
 
 ---
 
-## 🔐 Demo Credentials
-
-| Role    | Email               | Password |
-|---------|---------------------|----------|
-| Faculty | faculty@demo.com    | demo123  |
-| HOD     | hod@demo.com        | demo123  |
-
----
-
 ## ✨ Features
 
 **Faculty Portal**
